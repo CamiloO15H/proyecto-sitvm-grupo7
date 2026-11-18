@@ -97,9 +97,19 @@ Trabajamos con un entorno virtual (`venv`) y dejamos la dependencia en `requirem
 
 <!-- DP Θ(d) frente a exhaustiva exponencial en los días con viaje; regla actual. -->
 
-### 4.2 Operación 4 — Verificación
+### 4.2 Verificación
 
-<!-- Qué casos cubre pruebas.py: límites, ejemplo a mano, ≥ 20 aleatorias, restricción del negocio, contraejemplo. -->
+Para verificar que la solución propuesta encuentre realmente el costo mínimo, se creó el archivo `pruebas.py`, donde se comparan los resultados de la programación dinámica con la solución exhaustiva en diferentes tipos de casos.
+
+Primero se probaron algunos casos límite, como una lista vacía, un solo día con viajes, varios días sin ningún viaje y un periodo corto donde resulta más económico utilizar un pase semanal que pagar cada día por separado. Esto permite comprobar que el algoritmo también funciona correctamente en situaciones sencillas o poco comunes.
+
+También se utilizó el ejemplo que se resolvió manualmente, correspondiente a la lista `[3, 3, 1, 0, 3, 3, 2, 1]`, cuyo costo mínimo esperado es de $39.900. Tanto la estrategia de programación dinámica como la solución exhaustiva deben obtener este mismo valor.
+
+Además, se generan 25 casos aleatorios pequeños utilizando una semilla fija. Para cada uno de estos casos se calcula el resultado con la solución exhaustiva y luego se compara con el obtenido por programación dinámica. Se utilizan tamaños pequeños debido a que la solución exhaustiva aumenta rápidamente su costo a medida que crece la cantidad de días, por lo que en esta parte se usa principalmente como una forma de comprobar que la estrategia optimizada está llegando al mismo resultado mínimo.
+
+También se verifica la restricción principal del negocio relacionada con la devolución. Si al usuario se le cobró un valor mayor al costo mínimo, la devolución debe ser exactamente la diferencia entre ambos valores. Si el cobro ya corresponde al mínimo o es menor, la devolución debe ser cero.
+
+Por último, se incluye el contraejemplo `[0, 0, 0, 0, 0, 3, 3, 3, 3]`, en el cual la regla actual obtiene un costo de $38.000, mientras que la estrategia propuesta encuentra un costo mínimo de $36.000. Con esta prueba se busca comprobar que la regla actual no siempre encuentra la opción más económica.
 
 ### 4.3 Operación 4 — Diseño de los experimentos y resultados
 
