@@ -55,16 +55,53 @@ Pendiente para la entrega del 23 de noviembre.
 
 ### 2.2 Operación 4 — Por qué el problema admite programación dinámica
 
-<!-- Subestructura óptima y subproblemas que se repiten. -->
+Numeramos los días del 1 al `d` y llamamos `C(t)` al costo mínimo de cubrir todos los viajes que hay desde el día `t` hasta el final del mes. La respuesta del problema es `C(1)`.
+
+**Subestructura óptima.** Tomemos el primer día `t` que todavía tiene viajes sin cubrir. En una solución óptima, ese día se resuelve de una de tres maneras: se paga solo (pasajes sencillos o pase diario, el más barato), se compra un pase semanal que arranca ese día, o se compra un pase mensual que arranca ese día. Que el pase empiece justo en `t` no pierde generalidad: si en una solución el pase que cubre `t` empezara antes, correrlo hasta `t` cubre al menos los mismos días con viaje que todavía quedaban por cubrir y no cuesta más.
+
+Después de tomar esa decisión, lo que falta es el mismo problema sobre los días que el pase no alcanzó a cubrir: el pago de un solo día deja el problema en `t + 1`, el pase semanal en `t + 7` y el mensual en `t + 30` (o en el fin del mes, si el pase se pasa). Si la parte que queda no fuera óptima, la cambiaríamos por una más barata y el total bajaría, lo cual contradice que la solución fuera óptima. Por eso el costo óptimo de `t` se arma con los costos óptimos de días posteriores.
+
+**Subproblemas que se repiten.** El costo `C(t)` solo depende del día `t` y no de cómo se llegó a él. Pero hay muchas formas de llegar al mismo día. Por ejemplo, en un mes de 30 días con viajes todos los días, al día 16 se llega con dos semanales y un pago del día 15, o con un pago del día 1 y dos semanales después, o con un semanal, un pago y otro semanal; en todos esos casos lo que falta por cubrir desde el día 16 es exactamente el mismo problema. La solución exhaustiva vuelve a resolverlo una vez por cada camino. En total solo existen `d + 1` subproblemas distintos (uno por día y el caso base), así que basta calcular cada uno una vez y guardarlo en una tabla.
 
 ### 2.3 Operación 4 — Ejemplo resuelto a mano
 
-<!-- Ejemplo de 4 a 8 días, tabla llenada del último día al primero, y reconstrucción de las compras.
-     Debe ser el mismo que se prueba en pruebas.py. -->
+Usamos un mes corto de 8 días con viajes `[3, 3, 1, 0, 3, 3, 2, 1]`, el mismo que se prueba en [`pruebas.py`](src/tope_tarifario/pruebas.py). Para un día solo, `p(v)` es el menor valor entre `3.900·v` y el pase diario de `9.500`. Los valores de la tabla se llenan del día 8 al día 1, y `C(9) = 0` es el caso base. El pase mensual no aparece en las columnas porque en todos los días vale `135.000 + C(9) = 135.000`, que nunca gana.
+
+| Día `t` | Viajes | Pagar el día: `p(v) + C(t+1)` | Semanal: `36.000 + C(min(t+7, 9))` | `C(t)` | Decisión |
+| --- | --- | --- | --- | --- | --- |
+| 8 | 1 | 3.900 + 0 = 3.900 | 36.000 + 0 = 36.000 | **3.900** | pagar el día |
+| 7 | 2 | 7.800 + 3.900 = 11.700 | 36.000 + 0 = 36.000 | **11.700** | pagar el día |
+| 6 | 3 | 9.500 + 11.700 = 21.200 | 36.000 + 0 = 36.000 | **21.200** | pagar el día |
+| 5 | 3 | 9.500 + 21.200 = 30.700 | 36.000 + 0 = 36.000 | **30.700** | pagar el día |
+| 4 | 0 | no hay viajes | no hay viajes | **30.700** | hereda `C(5)` |
+| 3 | 1 | 3.900 + 30.700 = 34.600 | 36.000 + 0 = 36.000 | **34.600** | pagar el día |
+| 2 | 3 | 9.500 + 34.600 = 44.100 | 36.000 + 0 = 36.000 | **36.000** | semanal |
+| 1 | 3 | 9.500 + 36.000 = 45.500 | 36.000 + `C(8)` = 36.000 + 3.900 = 39.900 | **39.900** | semanal |
+
+**Reconstrucción de las compras.** Partimos del día 1: la mejor opción es el semanal (39.900 frente a 45.500), que cubre los días 1 a 7 y nos lleva al día 8. En el día 8 conviene pagar el pasaje sencillo (3.900) y ahí termina el mes. Las compras son un pase semanal el día 1 y un pasaje el día 8: `36.000 + 3.900 = 39.900`. Este valor es el que verifican las pruebas con la programación dinámica y con la solución exhaustiva. La regla actual también cobra 39.900 en esta instancia, así que el ejemplo sirve para entender el método pero no para distinguirlo de la regla; para eso está el contraejemplo del apartado 5.1.
 
 ### 2.4 Operación 4 — Recurrencia
 
-<!-- Recurrencia, cada término, caso base y orden de llenado. -->
+Sea `v_t` el número de viajes del día `t`, y `p(v) = min(3.900·v, 9.500)` lo más barato para pagar un día solo. Con los precios de [`tarifas.py`](src/tope_tarifario/tarifas.py), la recurrencia es:
+
+```
+C(t) = 0                                   si t > d
+
+C(t) = C(t + 1)                            si 1 ≤ t ≤ d y v_t = 0
+
+C(t) = min( p(v_t) + C(t + 1),
+            36.000 + C(min(t + 7,  d + 1)),
+            135.000 + C(min(t + 30, d + 1)) )   si 1 ≤ t ≤ d y v_t > 0
+```
+
+- **`C(t)`** es el costo mínimo de cubrir los viajes de los días `t` a `d`; la respuesta es `C(1)`.
+- **`p(v_t) + C(t + 1)`** es la opción de pagar solo el día `t` y resolver lo que sigue desde el día siguiente.
+- **`36.000 + C(min(t + 7, d + 1))`** es comprar un pase semanal ese día: cubre 7 días y se sigue desde `t + 7`. El `min` con `d + 1` evita salirse de la tabla cuando el pase sobrepasa el fin del mes; lo que sobra no se reembolsa (decisión 1 del equipo).
+- **`135.000 + C(min(t + 30, d + 1))`** es lo mismo con el pase mensual de 30 días. En un mes de 31 días, un mensual comprado el día 1 deja el día 31 para `C(31)`, que se resuelve con las otras opciones.
+- **Un día sin viajes** no necesita ninguna compra, por eso hereda el valor del día siguiente. Los pases sí pueden arrancar en un día con viajes que siga a uno vacío, porque `C(t)` ya los considera al llegar a ese día.
+- **Caso base:** `C(d + 1) = 0`, no queda nada por cubrir. Todos los índices mayores a `d` valen 0 y por eso el `min(…, d + 1)` es suficiente.
+
+**Orden de llenado.** `C(t)` solo consulta `C(t + 1)`, `C(t + 7)` y `C(t + 30)`, es decir, posiciones mayores. Por eso la tabla se llena de `t = d` hasta `t = 1`, y cuando se calcula una celda todas las que necesita ya están listas. En [`estrategia.py`](src/tope_tarifario/estrategia.py) la tabla tiene `d + 2` posiciones para poder usar los días con la misma numeración de la recurrencia (`viajes_por_dia[t - 1]` es el día `t`).
 
 ### 2.5 Segunda operación
 
@@ -97,7 +134,28 @@ Trabajamos con un entorno virtual (`venv`) y dejamos la dependencia en `requirem
 
 ### 4.1 Operación 4 — Complejidad temporal y espacial
 
-<!-- DP Θ(d) frente a exhaustiva exponencial en los días con viaje; regla actual. -->
+Llamamos `d` a los días del periodo y `k` a los días que tienen al menos un viaje (`k ≤ d`). La unidad de operación es la "opción evaluada", la misma de las tres soluciones.
+
+**Programación dinámica ([`estrategia.py`](src/tope_tarifario/estrategia.py)).**
+
+- *Tiempo:* la tabla tiene `d` celdas y cada una se calcula con a lo sumo tres opciones, cada una con un costo constante (una suma y una comparación). Un día con viajes evalúa 3 opciones y un día vacío evalúa 1, así que el contador da `3k + (d − k)`, que está entre `d` y `3d`: **Θ(d)**. Esto vale en el mejor, el peor y el caso promedio, porque el recorrido no depende de los valores de los viajes. Para `N` tarjetas el proceso completo cuesta Θ(N·d).
+- *Espacio:* la tabla guarda `d + 2` enteros: **Θ(d)**. Como cada celda solo mira hasta 30 posiciones adelante, bastaría con conservar las últimas 31 y el espacio bajaría a Θ(1), pero mantenemos la tabla completa porque con ella se puede reconstruir qué pases se compraron, como en el ejemplo del apartado 2.3.
+
+**Solución exhaustiva ([`exhaustivo.py`](src/tope_tarifario/exhaustivo.py)).** No reutiliza subproblemas, así que cada día con viajes se bifurca en tres llamadas (siguiente día, `t + 7` y `t + 30`).
+
+- *Tiempo:* en `costo_exhaustivo` solo se bifurca en los días con viaje, y el árbol de llamadas crece como mínimo según `T(k) ≥ T(k − 1) + T(k − 7)`, lo que da una base aproximada de 1,26 (raíz de `x⁷ = x⁶ + 1`): **exponencial en `k`**. Lo comprobamos con el contador: al sumar dos días con viaje el número de opciones se multiplica por cerca de 1,58, que es 1,26². La variante `costo_combinaciones`, que prueba cuatro decisiones por día aunque sean redundantes, hace 4 llamadas por nivel y recorre `4^d` caminos: **Θ(4^d)**.
+- *Espacio:* la pila de recursión llega a `d` llamadas y no se guarda tabla: **Θ(d)**. Es decir, la exhaustiva no ahorra memoria; lo que cambia es el tiempo.
+
+**Regla actual ([`regla_actual.py`](src/tope_tarifario/regla_actual.py)).** Recorre los días una vez para calcular el costo de cada uno y luego recorre los bloques de 7 días, con una cantidad constante de trabajo por bloque. El tiempo es **Θ(d)** y el espacio **Θ(d)** por la lista de costos diarios. Es decir, tiene la misma complejidad que la programación dinámica: la diferencia entre las dos no está en cuánto cuestan sino en que la regla puede cobrar de más.
+
+| Solución | Tiempo | Espacio |
+| --- | --- | --- |
+| Programación dinámica | Θ(d) | Θ(d) |
+| Regla actual | Θ(d) | Θ(d) |
+| Exhaustiva recursiva | exponencial en `k` (≈ 1,26^k) | Θ(d) |
+| Exhaustiva por combinaciones | Θ(4^d) | Θ(d) |
+
+El contraste de fondo es que la programación dinámica pasa de un número exponencial de caminos a solo `d + 1` subproblemas, porque calcula una sola vez cada `C(t)`. Como los meses tienen a lo sumo 31 días, `d` es acotado y cada tarjeta cuesta un número pequeño de operaciones; la solución exhaustiva sí se vuelve inviable al crecer `k`, que es el caso de las tarjetas que viajan casi todos los días.
 
 ### 4.2 Verificación
 
