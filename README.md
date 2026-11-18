@@ -39,11 +39,13 @@ Pendiente para la entrega del 23 de noviembre.
 
 ### 1.5 Supuestos
 
-<!-- Documentar aquí, como mínimo:
-     - Cómo se trata un mes de 31 días frente al pase mensual de 30 días.
-     - Cómo se interpretó la regla simplificada actual, con un ejemplo.
-     - Que se trabaja con el perfil general (los diferenciales tienen la misma estructura).
-     - Que un pase puede comprarse aunque sobre al final del mes. -->
+Para desarrollar esta parte del proyecto trabajamos con las tarifas del perfil general, ya que son las que aparecen en el caso de estudio. Los usuarios con tarifas diferenciales manejan la misma estructura de pases, aunque sus precios sean diferentes.
+
+También acordamos analizar cada mes por separado, teniendo en cuenta que puede tener entre 28 y 31 días. Un detalle importante es que el pase mensual cubre 30 días consecutivos y no necesariamente un mes calendario completo. Por eso, en un mes de 31 días, el último día puede necesitar un cobro adicional si el pase se compra desde el primer día. Sin embargo, la solución óptima también puede considerar comprarlo más adelante. Si un pase termina después del cierre del mes, los días que sobren no generan ninguna devolución.
+
+Para representar la regla que utiliza actualmente el sistema, decidimos trabajar con semanas fijas. Primero calculamos cuánto costaría cada día, utilizando la opción más económica entre los pasajes sencillos y el pase diario. Después agrupamos esos valores en bloques de siete días y comparamos cada bloque con el precio del pase semanal. Finalmente revisamos la opción del pase mensual.
+
+Esta interpretación nos permite tener una versión de referencia para comparar con la programación dinámica. Es importante aclarar que la división en semanas fijas fue un supuesto adoptado por el equipo, porque el enunciado no explica todos los detalles de implementación de la regla actual.
 
 ## 2. Diseño de la solución
 
@@ -138,11 +140,27 @@ Pendiente para la entrega del 23 de noviembre.
 
 ### 5.1 Operación 4 — Contraejemplo de la regla actual
 
-<!-- Instancia, resultado de la regla, óptimo y diferencia. Es la misma de pruebas.py. -->
+Para comprobar si la regla actual siempre encuentra el menor costo, utilizamos un caso de 30 días en el que una tarjeta registra tres viajes diarios desde el día 4 hasta el día 10. Durante los demás días no se realizan viajes.
+
+Al aplicar la regla simplificada, los viajes quedan separados en dos bloques semanales. En el primer bloque, correspondiente a los días 1 al 7, el costo de los viajes es de $38.000, por lo que se utiliza el pase semanal de $36.000. En el segundo bloque, de los días 8 al 14, los tres días con viajes cuestan $28.500. Sumando ambos valores, la regla obtiene un cobro total de $64.500.
+
+El problema es que los viajes se realizan durante siete días consecutivos, aunque estén repartidos entre dos bloques diferentes. Si se compra un pase semanal desde el día 4, se pueden cubrir todos los viajes hasta el día 10 pagando solamente $36.000.
+
+Esto significa que la regla actual cobra $28.500 más que el costo mínimo. El ejemplo demuestra que dividir el mes en semanas fijas puede producir resultados incorrectos, porque no permite aprovechar completamente un pase que comienza a mitad de una semana.
+
+Por esta razón, consideramos necesario utilizar una estrategia que evalúe las distintas fechas en las que se pueden comprar los pases, en lugar de limitarse a los bloques establecidos.
 
 ### 5.2 Operación 4 — Condición contraria
 
-<!-- Qué tendría que cambiar para que una estrategia voraz fuera la adecuada. -->
+Aunque en este problema la programación dinámica es la alternativa más adecuada, también analizamos en qué condiciones podría funcionar una estrategia voraz.
+
+Una estrategia voraz toma la decisión que parece más conveniente en cada momento y continúa sin revisar las decisiones anteriores. Para que funcione correctamente, necesitamos tener la seguridad de que esa elección inmediata no perjudicará el resultado final.
+
+En nuestro caso, esto no se cumple porque un pase semanal puede cubrir viajes de varios días y comenzar en cualquier momento. Una opción que parece económica para un día puede hacer que se desaproveche un pase que habría reducido el costo total.
+
+Una condición que permitiría usar una estrategia voraz más sencilla sería que solamente existieran pasajes individuales y pases diarios. En ese escenario, cada día se podría resolver de manera independiente, escogiendo el menor costo entre ambas opciones, sin que esa decisión afectara los días siguientes.
+
+Por lo tanto, la estrategia voraz sería suficiente si desaparecieran las decisiones que afectan varios días. Mientras existan pases semanales y mensuales que puedan comenzar en distintas fechas y se exija encontrar el costo mínimo exacto, es necesario evaluar las alternativas de forma más completa. Para eso utilizamos programación dinámica.
 
 ### 5.3 Operación 4 — Recomendación
 
