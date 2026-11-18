@@ -17,3 +17,16 @@ DIAS_SEMANAL: int = 7
 
 DIAS_MENSUAL: int = 30
 """Días consecutivos que cubre el pase mensual."""
+
+
+def costo_del_dia(viajes: int) -> int:
+    """Calcula lo más barato para pagar solo un día.
+
+    Args:
+        viajes: viajes de la tarjeta en ese día.
+
+    Returns:
+        El menor valor entre los pasajes sencillos y el pase diario, en
+        pesos; 0 si el día no tiene viajes.
+    """
+    return min(viajes * PASAJE, DIARIO)
