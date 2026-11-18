@@ -146,7 +146,15 @@ Pendiente para la entrega del 23 de noviembre.
 
 ### 5.3 Operación 4 — Recomendación
 
-<!-- Qué adoptar, qué gana la organización y qué límite o riesgo debe conocer. -->
+Para la liquidación del tope tarifario se recomienda utilizar la solución basada en programación dinámica. La principal razón es que esta estrategia permite encontrar el costo mínimo real teniendo en cuenta todas las alternativas disponibles, sin necesidad de probar todas las combinaciones posibles como ocurre con la solución exhaustiva.
+
+Frente a la regla actual, la programación dinámica tiene la ventaja de que no depende de dividir el mes en bloques fijos para tomar la decisión. Esto es importante porque un pase semanal puede comenzar en cualquier día y cubrir días que pertenezcan a dos bloques diferentes. En esos casos, la regla actual puede terminar cobrando más de lo necesario, como se observa en el contraejemplo utilizado durante las pruebas.
+
+Otra ventaja es que la programación dinámica mantiene un costo de ejecución manejable a medida que aumenta la cantidad de días analizados, mientras que la solución exhaustiva crece demasiado rápido y solamente resulta útil para verificar casos pequeños. Por esta razón, la solución exhaustiva puede servir como apoyo durante las pruebas, pero no sería una opción adecuada para utilizarla en el proceso real.
+
+Como límite de la solución, se debe tener en cuenta que el algoritmo depende de las reglas y productos tarifarios definidos actualmente. Si en el futuro se agregan nuevos tipos de pases, cambian sus duraciones o se modifican las condiciones para utilizarlos, la lógica del algoritmo también tendría que actualizarse para seguir garantizando que se encuentre el costo mínimo correcto.
+
+Por lo tanto, se considera que la programación dinámica es la alternativa más adecuada para esta operación, ya que permite obtener una liquidación exacta y evita que el usuario termine pagando un valor mayor al que realmente le corresponde.
 
 ### 5.4 Comparación global y solución seleccionada
 
