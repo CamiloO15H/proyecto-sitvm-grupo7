@@ -139,7 +139,7 @@ Llamamos `d` a los días del periodo y `k` a los días que tienen al menos un vi
 **Programación dinámica ([`estrategia.py`](src/tope_tarifario/estrategia.py)).**
 
 - *Tiempo:* la tabla tiene `d` celdas y cada una se calcula con a lo sumo tres opciones, cada una con un costo constante (una suma y una comparación). Un día con viajes evalúa 3 opciones y un día vacío evalúa 1, así que el contador da `3k + (d − k)`, que está entre `d` y `3d`: **Θ(d)**. Esto vale en el mejor, el peor y el caso promedio, porque el recorrido no depende de los valores de los viajes. Para `N` tarjetas el proceso completo cuesta Θ(N·d).
-- *Espacio:* la tabla guarda `d + 2` enteros: **Θ(d)**. Como cada celda solo mira hasta 30 posiciones adelante, bastaría con conservar las últimas 31 y el espacio bajaría a Θ(1), pero mantenemos la tabla completa porque con ella se puede reconstruir qué pases se compraron, como en el ejemplo del apartado 2.3.
+- *Espacio:* la tabla guarda `d + 2` enteros: **Θ(d)**. Como cada celda solo mira hasta 30 posiciones adelante, bastaría con conservar las últimas 31 y el espacio bajaría a Θ(1), pero mantenemos la tabla completa porque con ella se podría reconstruir qué pases se compraron, como hicimos a mano en el ejemplo del apartado 2.3.
 
 **Solución exhaustiva ([`exhaustivo.py`](src/tope_tarifario/exhaustivo.py)).** No reutiliza subproblemas, así que cada día con viajes se bifurca en tres llamadas (siguiente día, `t + 7` y `t + 30`).
 
@@ -169,7 +169,9 @@ Además, se generan 25 casos aleatorios pequeños utilizando una semilla fija. P
 
 También se verifica la restricción principal del negocio relacionada con la devolución. Si al usuario se le cobró un valor mayor al costo mínimo, la devolución debe ser exactamente la diferencia entre ambos valores. Si el cobro ya corresponde al mínimo o es menor, la devolución debe ser cero.
 
-Por último, se incluye el contraejemplo `[0, 0, 0, 0, 0, 3, 3, 3, 3]`, en el cual la regla actual obtiene un costo de $38.000, mientras que la estrategia propuesta encuentra un costo mínimo de $36.000. Con esta prueba se busca comprobar que la regla actual no siempre encuentra la opción más económica.
+Por último, se incluyen dos contraejemplos. El corto, `[0, 0, 0, 0, 0, 3, 3, 3, 3]`, en el que la regla actual cobra $38.000 y la estrategia propuesta encuentra $36.000. Y el del apartado 5.1: un mes de 30 días con tres viajes diarios del día 4 al día 10, en el que la regla cobra $64.500, el mínimo es $36.000 y la devolución calculada es exactamente $28.500. Con estas pruebas se comprueba que la regla actual no siempre encuentra la opción más económica.
+
+Los casos límite incluyen además un febrero (28 días) y un mes de 31 días con tres viajes diarios. Gracias a ellos encontramos y corregimos un error en la regla actual: solo revisaba el pase mensual en meses de 30 o 31 días, de modo que en febrero cobraba $144.000 en lugar de $135.000.
 
 ### 4.3 Operación 4 — Diseño de los experimentos y resultados
 
@@ -180,15 +182,69 @@ Por último, se incluye el contraejemplo `[0, 0, 0, 0, 0, 3, 3, 3, 3]`, en el cu
 
 ![Operaciones frente a d](graficas/tope_tarifario/operaciones_vs_n.png)
 
-<!-- Nota de cómo se midió: repeticiones, semilla, tamaños, equipo donde se midió. -->
+![Tiempo de la programación dinámica y de la regla en periodos largos](graficas/tope_tarifario/tiempo_dp_periodos_largos.png)
+
+**Cómo medimos.** Corrimos [`medicion.py`](src/tope_tarifario/medicion.py) en un portátil con procesador AMD (familia 25), Windows 11 y Python 3.13.3. Las tarjetas salen de [`datos.py`](src/tope_tarifario/datos.py) con semilla fija (2026 más el número de días), así que las tres soluciones se miden sobre las mismas tarjetas. En cada tamaño usamos 20 tarjetas y repetimos la medición 5 veces; el tiempo que reportamos es el promedio por tarjeta. Con `time.perf_counter()` solo se cronometra la llamada a cada solución, no la generación de los datos. Dentro del mismo experimento se verifica que la programación dinámica y la exhaustiva den el mismo costo en todas las tarjetas. Las tablas completas quedaron en [`resultados.md`](graficas/tope_tarifario/resultados.md).
+
+Hicimos tres experimentos:
+
+| Experimento | Soluciones | Tamaños `d` (días) | Para qué |
+| --- | --- | --- | --- |
+| A | Programación dinámica, exhaustiva recursiva y regla actual | 5, 10, 15, 20, 25, 30 y 40 | Comparar las tres en los mismos ejes, con las parejas 10 → 20 y 20 → 40 |
+| B | Programación dinámica y regla actual | De 30 a 7.680, duplicando | Ver la forma de la curva en tamaños grandes, donde la exhaustiva ya no corre |
+| C | Exhaustiva por combinaciones (4^d) | 3 a 8 | Mostrar por qué el proceso que explora todas las combinaciones no termina |
+
+**Resultados del experimento A (tiempo medio por tarjeta y opciones evaluadas):**
+
+| `d` | DP: tiempo (s) | DP: operaciones | Exhaustiva: tiempo (s) | Exhaustiva: operaciones | Regla: tiempo (s) | Regla: operaciones |
+| --- | --- | --- | --- | --- | --- | --- |
+| 5 | 1,14e-06 | 13 | 1,55e-06 | 13 | 7,17e-07 | 14 |
+| 10 | 2,02e-06 | 28 | 4,74e-06 | 41 | 1,10e-06 | 26 |
+| 15 | 2,92e-06 | 42 | 1,23e-05 | 129 | 1,62e-06 | 38 |
+| 20 | 4,39e-06 | 56 | 6,35e-05 | 407 | 1,88e-06 | 48 |
+| 25 | 4,65e-06 | 70 | 1,07e-04 | 1.162 | 2,24e-06 | 60 |
+| 30 | 5,89e-06 | 84 | 3,10e-04 | 3.482 | 2,88e-06 | 72 |
+| 40 | 7,53e-06 | 112 | 2,84e-03 | 30.596 | 4,42e-06 | 94 |
+
+En las gráficas de tiempo y de operaciones el eje vertical está en escala logarítmica: así una curva exponencial se ve como una recta inclinada y una lineal se ve casi plana. La exhaustiva por combinaciones (roja) sube casi vertical, la exhaustiva recursiva (naranja) sube en línea recta, y la programación dinámica (azul) y la regla (verde) apenas crecen. En el experimento B, ya en escala normal, las dos curvas son rectas: el tiempo crece en proporción a los días.
 
 ### 4.4 Operación 4 — Lo medido contra lo esperado
 
-<!-- Pareja d y 2d: factor de crecimiento de tiempo y de operaciones de cada solución. -->
+Tomamos las parejas en las que el segundo tamaño es el doble del primero y calculamos cuánto se multiplicó cada medida:
+
+| Solución | `d` → `2d` | Factor de tiempo | Factor de operaciones | Esperado por la complejidad |
+| --- | --- | --- | --- | --- |
+| Programación dinámica | 10 → 20 | 2,17 | 1,98 | 2 (Θ(d)) |
+| Programación dinámica | 20 → 40 | 1,71 | 1,99 | 2 |
+| Programación dinámica (B) | 960 → 1.920 | 2,09 | 2,01 | 2 |
+| Programación dinámica (B) | 3.840 → 7.680 | 1,96 | 2,00 | 2 |
+| Regla actual | 10 → 20 | 1,71 | 1,85 | 2 (Θ(d)) |
+| Regla actual (B) | 3.840 → 7.680 | 1,88 | 2,00 | 2 |
+| Exhaustiva recursiva | 10 → 20 | 13,38 | 9,86 | ≈ 1,26^9 ≈ 8 |
+| Exhaustiva recursiva | 20 → 40 | 44,72 | 75,21 | ≈ 1,26^18 ≈ 64 |
+
+**Programación dinámica y regla actual.** Al duplicar `d`, las operaciones se multiplican por 1,98 a 2,01, prácticamente el 2 que predice Θ(d). El tiempo también ronda 2, pero con más variación (de 1,71 a 2,17), sobre todo en los tamaños pequeños: ahí cada tarjeta tarda unos pocos microsegundos y cualquier tarea del sistema operativo pesa en la medición. En los tamaños grandes del experimento B, donde el tiempo ya es de milisegundos, el factor se acerca más a 2 (1,96 a 2,09). La programación dinámica tarda entre 1,6 y 2,6 veces lo que tarda la regla: tienen el mismo orden de crecimiento y solo cambia la constante, porque la DP evalúa el semanal y el mensual en cada día con viajes.
+
+**Exhaustiva recursiva.** El factor no es constante: crece con el tamaño (≈ 10 al pasar de 10 a 20 días y ≈ 75 de 20 a 40), que es la firma de un crecimiento exponencial. Como en nuestros datos cerca del 90 % de los días tienen viajes, al duplicar de 10 a 20 se agregan unos 9 días con viaje y de 20 a 40 unos 18. Con la base de 1,26 por día con viaje del apartado 4.1, lo esperado es ≈ 8 y ≈ 64; medimos 9,86 y 75,21, del mismo orden. La diferencia viene de que los días vacíos y los pases que se salen del mes no siguen exactamente la recurrencia mínima. El factor de tiempo de 20 → 40 (44,72) es menor que el de operaciones porque el tiempo de `d = 20` salió alto por ruido (6,35e-05 s, casi lo mismo que en `d = 25`). Por eso, para comparar con la teoría nos apoyamos en las operaciones, que no tienen ruido.
+
+**Exhaustiva por combinaciones.** Cada día extra multiplica las operaciones casi exactamente por 4 (de 84 a 340, a 1.364, …, a 87.380), como predice Θ(4^d).
 
 ### 4.5 Operación 4 — Extrapolación al volumen real y ventana operativa
 
-<!-- 950.000 tarjetas; ventana de 4 h; DP, regla actual y exhaustiva. -->
+Para llevar las mediciones al volumen real tomamos el tiempo medio por tarjeta con `d = 30` y lo multiplicamos por las 950.000 tarjetas que se usan al mes. Esto es válido para la programación dinámica y para la regla porque son lineales en `d` (lo vimos en el apartado 4.4) y cada tarjeta se liquida por separado, así que el total crece en proporción al número de tarjetas. Para la exhaustiva recursiva también usamos el tiempo medido con `d = 30`, porque un mes no pasa de 31 días. Para la de combinaciones, que solo pudimos correr hasta `d = 8`, multiplicamos el tiempo medido por combinación por las 4^30 combinaciones de un mes. **Son estimaciones**, no mediciones del volumen real.
+
+| Solución | Tiempo por tarjeta | Tiempo de un cierre de mes | ¿Cabe en la ventana de 4 h? |
+| --- | --- | --- | --- |
+| Programación dinámica | 5,89 µs | ≈ 5,6 s | Sí |
+| Regla actual | 2,88 µs | ≈ 2,7 s | Sí |
+| Exhaustiva recursiva | 0,31 ms | ≈ 4,9 min | Sí, para un mes |
+| Exhaustiva por combinaciones | ≈ 9 × 10¹⁰ s (≈ 2.900 años) | ≈ 2,4 × 10¹³ h | No: no termina |
+
+La programación dinámica liquida todas las tarjetas en unos segundos, muy lejos del límite de 4 horas. La exploración de todas las combinaciones, que es lo que describe el caso como proceso actual, tardaría unos 2.900 años en una sola tarjeta: por eso hoy no termina y se usa la regla simplificada.
+
+Un hallazgo que no esperábamos: la exhaustiva recursiva, que decide solo qué comprar en el primer día sin pagar, sí cabría en la ventana para un mes (≈ 4,9 minutos). Esto pasa porque el pase mensual corta muchas ramas. Pero su costo es exponencial: al pasar de 20 a 40 días sus operaciones se multiplicaron por 75, así que si el periodo de liquidación fuera más largo o se agregaran productos, dejaría de caber muy rápido. La programación dinámica, en cambio, crece en línea recta.
+
+Si las validaciones crecieran un 30 %, la DP seguiría siendo lineal en el número de tarjetas: con 1.235.000 tarjetas el cierre tardaría unos 7 segundos.
 
 ### 4.6 Segunda operación
 
@@ -240,7 +296,18 @@ Pendiente para la entrega del 23 de noviembre.
 
 ### 6.1 Consumo energético — Operación 4
 
-<!-- kWh = kW × h con 0,5 kW: regla actual frente a DP, y proyección a un año (12 cierres de mes). -->
+La energía se calcula como potencia por tiempo: kWh = kW × h, con el servidor de 500 W (0,5 kW) que informa el cliente y 12 cierres de mes al año. Los tiempos son los extrapolados en el apartado 4.5, así que también son estimaciones.
+
+| Solución | Horas por cierre | kWh por cierre | kWh por año (12 cierres) |
+| --- | --- | --- | --- |
+| Programación dinámica | 0,0016 | 0,0008 | 0,009 |
+| Regla actual | 0,0008 | 0,0004 | 0,005 |
+| Exhaustiva recursiva | 0,0817 | 0,0408 | 0,490 |
+| Exhaustiva por combinaciones | ≈ 2,4 × 10¹³ | ≈ 1,2 × 10¹³ | No termina |
+
+**Frente a la regla actual**, la programación dinámica gasta un poco más: unos 0,004 kWh más al año, una cantidad despreciable (menos de lo que consume un bombillo LED en una hora). A cambio, devuelve exactamente lo que corresponde a cada usuario. En nuestra muestra sintética de 1.000 tarjetas de 30 días, la regla cobró de más al 1,5 % de las tarjetas, con un máximo de $11.400 en una tarjeta; si esa proporción se repitiera en las 950.000 tarjetas, serían unos $56 millones al mes cobrados de más. Esta cifra depende de cómo generamos los datos, así que solo indica el orden de magnitud.
+
+**Frente al proceso que explora todas las combinaciones**, el ahorro es total: ese proceso no termina, mientras que la programación dinámica cierra el mes en segundos con menos de una milésima de kWh. Frente a la exhaustiva recursiva, la DP ahorra unos 0,48 kWh al año y, sobre todo, no corre el riesgo de crecer de forma exponencial si cambian las condiciones.
 
 ### 6.2 Preguntas de impacto del caso
 
@@ -279,5 +346,3 @@ python src/tope_tarifario/medicion.py
 En Linux o macOS, el entorno se activa con `source .venv/bin/activate`.
 
 `datos.py` genera las tarjetas sintéticas con semilla fija, de modo que cada ejecución produce los mismos datos. `pruebas.py` verifica que la programación dinámica coincide con la solución exhaustiva y que se cumple la restricción del negocio; si todo está bien, imprime "Todas las pruebas pasaron". `medicion.py` corre los experimentos y guarda en `graficas/tope_tarifario/` las gráficas `tiempo_vs_n.png`, `operaciones_vs_n.png` y `tiempo_dp_periodos_largos.png`, junto con `resultados.md`, que tiene las tablas usadas en este informe.
-
-<!-- Explicar cómo se generan los datos sintéticos (datos.py, semilla) y qué produce medicion.py. -->
