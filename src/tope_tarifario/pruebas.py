@@ -30,6 +30,15 @@ def probar_casos_limite() -> None:
     assert costo_minimo(cuatro_dias) == 36000
     assert costo_exhaustivo(cuatro_dias) == 36000
 
+    assert costo_regla_actual([]) == 0
+    febrero = [3] * 28
+    assert costo_regla_actual(febrero) == 135000, febrero
+    assert costo_minimo(febrero) == 135000, febrero
+
+    mes_31 = [3] * 31
+    assert costo_minimo(mes_31) == 144500, mes_31
+    assert costo_regla_actual(mes_31) == 144500, mes_31
+
 
 def probar_ejemplo_a_mano() -> None:
     """Verifica el ejemplo pequeño resuelto a mano en el README."""
@@ -74,9 +83,14 @@ def probar_contraejemplo() -> None:
     costo_regla = costo_regla_actual(viajes)
     costo_optimo = costo_minimo(viajes)
 
-    assert costo_regla == 38000
-    assert costo_optimo == 36000
-    assert costo_regla > costo_optimo
+    assert costo_regla == 38000, viajes
+    assert costo_optimo == 36000, viajes
+    assert costo_regla > costo_optimo, viajes
+
+    contra = [0, 0, 0] + [3] * 7 + [0] * 20
+    assert costo_regla_actual(contra) == 64500, contra
+    assert costo_minimo(contra) == 36000, contra
+    assert liquidar_tope(contra, 64500) == 28500, contra
 
 
 if __name__ == "__main__":
