@@ -1,6 +1,6 @@
 """Interpretación acordada de la regla simplificada del SITVM."""
 
-from tarifas import DIAS_SEMANAL, MENSUAL, SEMANAL, costo_del_dia
+from tarifas import DIAS_MENSUAL, DIAS_SEMANAL, MENSUAL, SEMANAL, costo_del_dia
 
 
 def costo_regla_actual_contado(viajes_por_dia: list[int]) -> tuple[int, int]:
@@ -26,13 +26,9 @@ def costo_regla_actual_contado(viajes_por_dia: list[int]) -> tuple[int, int]:
         operaciones += 2  # costo por días y pase semanal
         total += min(bloque, SEMANAL)
 
-    
-    if dias >= 30:
-        operaciones += 2
-        adicional = costos_dia[30] if dias == 31 else 0
-        candidato_mensual = MENSUAL + adicional
-        total = min(total, candidato_mensual)
-
+    operaciones += 2  # total por bloques y pase mensual
+    adicional = sum(costos_dia[DIAS_MENSUAL:])
+    total = min(total, MENSUAL + adicional)
 
     return total, operaciones
 
