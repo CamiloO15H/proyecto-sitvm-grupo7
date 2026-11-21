@@ -17,7 +17,9 @@
 
 ### 1.1 Descripción del problema computacional
 
-Pendiente para la entrega del 23 de noviembre.
+El SITVM concilia cada noche, en un proceso por lotes sobre un único servidor de 500 W, todas las validaciones del día: unos 1,4 millones de registros que llegan de 2.100 validadores, con entre 4 % y 9 % repetidos porque los buses reenvían lotes completos cuando la descarga se interrumpe. Con esos registros el proceso depura, ordena y liquida, y entrega información a Recaudo, a Atención al Usuario y a Planeación de la Operación.
+
+El problema computacional consiste en que ese proceso dejó de caber en la ventana de 4 horas (00:00 a 04:00). Según el cliente, hoy tarda más de 8 horas, y la causa no es el equipo sino las estrategias algorítmicas: tres de las cuatro operaciones crecen de forma cuadrática con el tamaño de la entrada y la cuarta explora un número exponencial de combinaciones. El trabajo es medir ese costo, proponer estrategias que den exactamente el mismo resultado con menos operaciones y estimar cuánta energía y cuánto tiempo se ahorran en el volumen real.
 
 ### 1.2 Operación 4 — Liquidación del tope tarifario: entradas, salida y restricciones
 
@@ -31,11 +33,32 @@ Otra restricción importante es que el resultado debe ser exacto. Si al usuario 
 
 ### 1.3 Operaciones críticas del proceso
 
-Pendiente para la entrega del 23 de noviembre.
+| # | Operación | Tamaño `n` en el volumen real | Estrategia actual | Orden de crecimiento | ¿Se trabaja en este proyecto? |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Deduplicación de validaciones | 1.400.000 registros por noche | Compara cada validación con todas las ya aceptadas | Θ(n²) | No (se mide como línea base) |
+| 2 | Ordenamiento por tarjeta y hora | ≈ 1.309.000 validaciones únicas por noche | Ordenamiento por inserción | Θ(n²) en el caso promedio | No (se mide como línea base) |
+| 3 | Detección de las franjas de congestión | 166.000 intervalos por estación × 80 estaciones | Evalúa todos los tramos posibles de la serie | Θ(n²) | Sí (apartados 2.5 y 4.6) |
+| 4 | Liquidación del tope tarifario | 950.000 tarjetas × 28 a 31 días | Explora todas las combinaciones de pases y, si no termina, aplica una regla simplificada | Exponencial (≈ 4^d por tarjeta) | Sí (Laboratorio 4) |
+
+Para comprobar que estas son las operaciones más costosas, reprodujimos en [`proceso_actual.py`](src/linea_base/proceso_actual.py) las estrategias actuales de las operaciones 1, 2 y 3 y las medimos con [`medicion.py`](src/linea_base/medicion.py) en tamaños de 500 a 8.000. Al duplicar `n`, las operaciones de las tres se multiplicaron por 4,00 a 4,04 y el tiempo por 3,45 a 4,26: es el factor 4 que corresponde a un crecimiento cuadrático. La operación 4 se midió en el Laboratorio 4 (apartados 4.3 a 4.5).
+
+![Proceso actual: tiempo frente al tamaño de la entrada](graficas/linea_base/tiempo_vs_n.png)
 
 ### 1.4 Costo energético del proceso actual (línea base)
 
-Pendiente para la entrega del 23 de noviembre.
+Para llevar cada operación al volumen real estimamos la constante `c` de `t ≈ c·n²` con los tres tamaños medidos más grandes y la multiplicamos por el `n` real. La energía es kWh = 0,5 kW × horas. Las operaciones 1 y 2 corren las 365 noches del año; para la operación 3 supusimos 12 ejecuciones al año (una por mes, sobre el histórico de dos años de las 80 estaciones). Las tablas completas están en [`resultados.md`](graficas/linea_base/resultados.md). **Son estimaciones** a partir de nuestras mediciones (AMD, Windows 11, Python 3.13.3).
+
+| Operación | Horas por ejecución | kWh por ejecución | Ejecuciones al año | kWh al año |
+| --- | --- | --- | --- | --- |
+| 1. Deduplicación | 14,6 | 7,28 | 365 | 2.657 |
+| 2. Ordenamiento | 10,4 | 5,18 | 365 | 1.890 |
+| 3. Franjas de congestión (80 estaciones) | 15,7 | 7,86 | 12 | 94 |
+| 4. Tope tarifario: todas las combinaciones | No termina | — | 12 | — |
+| **Total de las operaciones 1 a 3** | | | | **4.641** |
+
+Solo las operaciones 1 y 2 suman unas **24,9 horas por noche**, más de seis veces la ventana de 4 horas. El cliente reporta que hoy el proceso tarda más de 8 horas: nuestra cifra es mayor porque la medimos en Python, que es más lento que un sistema de producción, pero las dos llevan a la misma conclusión: con estrategias cuadráticas el proceso no cabe en la ventana, y crecerá en proporción al cuadrado del volumen. La operación 4 no termina si explora todas las combinaciones, y por eso hoy se reemplaza por la regla simplificada, que cobra de más en algunos meses (apartado 5.1).
+
+Esta línea base, de unos **4.641 kWh al año** para las operaciones 1 a 3, es contra la que se comparan las estrategias propuestas en los apartados 6.1 y 4.6.
 
 ### 1.5 Supuestos
 
@@ -341,6 +364,7 @@ py -m venv .venv
 pip install -r requirements.txt
 python src/tope_tarifario/pruebas.py
 python src/tope_tarifario/medicion.py
+python src/linea_base/medicion.py
 ```
 
 En Linux o macOS, el entorno se activa con `source .venv/bin/activate`.
