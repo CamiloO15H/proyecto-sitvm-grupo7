@@ -74,7 +74,17 @@ Esta interpretación nos permite tener una versión de referencia para comparar 
 
 ### 2.1 Estructuras de datos seleccionadas
 
-Pendiente para la entrega del 23 de noviembre.
+Para implementar las soluciones se utilizaron principalmente listas y tuplas de Python, ya que permiten representar de forma sencilla la información que necesita cada algoritmo.
+
+En la operación del tope tarifario se utiliza una lista para guardar la cantidad de viajes realizados por una tarjeta en cada día del mes. Cada posición representa un día y su valor indica cuántos viajes se realizaron. Esta misma estructura facilita recorrer los días en orden y calcular las diferentes opciones de pago.
+
+Para la solución mediante programación dinámica también se utiliza una lista como tabla de resultados. En ella se van almacenando los costos mínimos calculados para los diferentes días, evitando tener que resolver varias veces el mismo subproblema. La tabla tiene algunas posiciones adicionales para poder consultar de forma sencilla los días que quedan por fuera del periodo cuando se evalúa un pase semanal o mensual.
+
+En la operación de franjas de congestión se utiliza igualmente una lista, pero en este caso contiene los saldos netos de pasajeros de cada intervalo de cinco minutos. A partir de esta lista, los algoritmos buscan el tramo consecutivo cuya suma sea la mayor.
+
+Para representar resultados como una validación o un tramo se utilizan tuplas. Por ejemplo, un tramo de congestión puede guardar la suma encontrada, la posición inicial y la posición final. Las tuplas son útiles en estos casos porque representan un conjunto de valores que pertenecen al mismo resultado y que no necesitan modificarse después de ser creados.
+
+Otra decisión importante es que los algoritmos no modifican las listas originales que reciben como entrada. Las funciones solamente consultan la información o trabajan con copias cuando es necesario. Esto permite conservar los datos originales y mantener la trazabilidad del proceso, algo importante especialmente si después se necesita revisar una liquidación o una reclamación.
 
 ### 2.2 Operación 4 — Por qué el problema admite programación dinámica
 
@@ -334,19 +344,51 @@ La energía se calcula como potencia por tiempo: kWh = kW × h, con el servidor 
 
 ### 6.2 Preguntas de impacto del caso
 
-Pendiente para la entrega del 23 de noviembre.
+Además del rendimiento de los algoritmos, en este caso también es importante analizar el impacto que pueden tener las decisiones tomadas sobre los usuarios y sobre la operación del sistema de transporte.
+
+Cuando una validación se cobra dos veces o el tope tarifario se calcula de forma incorrecta, el costo termina siendo asumido directamente por el usuario. Esto puede ser especialmente importante para las personas que utilizan el transporte con mayor frecuencia o que pertenecen a perfiles con tarifa diferencial. Por ejemplo, en el contraejemplo analizado para el tope tarifario, la regla actual puede generar un cobro de $28.500 por encima del valor mínimo que realmente debería pagar el usuario. Por esta razón, no basta con que el algoritmo sea rápido, también debe garantizar que el resultado sea exacto.
+
+También existen aspectos normativos que condicionan la forma en que se debe implementar la solución. Una tarjeta personalizada permite relacionar los viajes con una persona y, por lo tanto, la información puede revelar sus desplazamientos y hábitos. Por esta razón, los datos deben utilizarse únicamente para lo necesario y conservarse de forma segura. Además, al tratarse de un servicio público de transporte, el cálculo de las tarifas y las devoluciones debe respetar las reglas establecidas y permitir que los resultados puedan ser revisados en caso de una reclamación.
+
+Por último, también se debe considerar el crecimiento del sistema. Si entra en funcionamiento una tercera línea de cable y la cantidad de validaciones aumenta un 30 %, las estrategias eficientes pueden absorber este crecimiento de una forma mucho más controlada que los algoritmos actuales. Las soluciones lineales crecerían aproximadamente en la misma proporción que los datos, mientras que los procesos cuadráticos actuales aumentarían mucho más rápidamente. Este comportamiento se analiza con mayor detalle en la sección 6.5.
 
 ### 6.3 Consecuencias sobre las personas
 
-Pendiente para la entrega del 23 de noviembre.
+Los errores en este proceso no afectan solamente al sistema, sino directamente a las personas que utilizan el transporte. Si una validación se registra dos veces o si el tope tarifario se calcula mal, el usuario puede terminar pagando más de lo que realmente le corresponde. En ese caso, el costo del error lo asume inicialmente la persona, que además tendría que hacer una reclamación para recuperar el dinero.
+
+También existen consecuencias cuando el procesamiento no termina a tiempo. Actualmente, al superar la ventana disponible durante la noche, algunas devoluciones pueden acreditarse con retraso y los validadores pueden comenzar la operación utilizando información del día anterior. Esto significa, por ejemplo, que una tarjeta reportada como robada podría seguir funcionando durante más tiempo del esperado.
+
+El retraso también puede afectar las decisiones de Planeación. Si no se logra procesar toda la información de las estaciones a tiempo, las decisiones sobre frecuencia de trenes pueden terminar basándose solamente en una parte de los datos y no en el comportamiento completo de la red.
+
+Para reducir estos riesgos, las soluciones propuestas buscan obtener resultados exactos y en un tiempo que permita completar el proceso dentro de la ventana disponible. En el caso del tope tarifario, la programación dinámica se verifica comparándola con una solución exhaustiva en casos pequeños, mientras que para las franjas de congestión también se verifica que las estrategias encuentren el mismo resultado máximo. Además, los algoritmos no modifican los datos originales, lo cual permite conservar la trazabilidad y revisar posteriormente qué ocurrió ante una liquidación o una reclamación.
 
 ### 6.4 Marco normativo y buenas prácticas
 
-Pendiente para la entrega del 23 de noviembre.
+Para el desarrollo de la solución también se tuvieron en cuenta algunas normas colombianas relacionadas con la protección de los datos personales, la prestación del servicio público de transporte, los derechos de los usuarios y la conservación de la información.
+
+| Norma | Relación con el proyecto | Cómo se tiene en cuenta en la solución | Fuente |
+| --- | --- | --- | --- |
+| **Ley Estatutaria 1581 de 2012** | Regula la protección de los datos personales. En este caso, los viajes realizados con una tarjeta personalizada pueden permitir conocer desplazamientos y hábitos de una persona. | Los algoritmos utilizan solamente la información necesaria para realizar los cálculos y no necesitan trabajar con datos como el nombre del usuario. También se evita generar copias innecesarias de la información personal. | [Función Pública](https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=49981) |
+| **Decreto 1377 de 2013** | Complementa la regulación relacionada con el tratamiento de datos personales, incluyendo aspectos como la autorización y las políticas para su manejo. | Se aplica el principio de utilizar únicamente los datos necesarios para el proceso y mantener control sobre la información utilizada durante la ejecución. | [Función Pública](https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=53646) |
+| **Ley 105 de 1993 y Decreto 105 de 1995** | El transporte público es un servicio regulado y las tarifas son establecidas por las autoridades competentes. | Los algoritmos no crean ni modifican las tarifas. Su función es aplicar correctamente los valores definidos y encontrar la combinación de pago que corresponda según las reglas establecidas. | [Ley 105](https://www.funcionpublica.gov.co/eva/gestornormativo/norma_pdf.php?i=296) y [Decreto 105](https://www1.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=3286) |
+| **Ley 336 de 1996** | Establece el marco general para la prestación del servicio público de transporte en Colombia. | La solución busca apoyar un proceso de recaudo correcto, verificable y acorde con las condiciones definidas para la prestación del servicio. | [Función Pública](https://www.funcionpublica.gov.co/eva/gestornormativo/norma_pdf.php?i=346) |
+| **Ley 1480 de 2011 – Estatuto del Consumidor** | Protege los derechos de los usuarios y contempla la posibilidad de presentar reclamaciones cuando existe un cobro incorrecto. | La solución del tope tarifario calcula exactamente el valor mínimo y la devolución correspondiente, reduciendo la posibilidad de cobros superiores a los que debería asumir el usuario. | [Cancillería](https://www.cancilleria.gov.co/sites/default/files/Normograma/docs/ley_1480_2011.htm) |
+| **Ley 1755 de 2015** | Regula el derecho de petición y establece tiempos para dar respuesta a las solicitudes de los ciudadanos. | Al poder recalcular rápidamente el valor correcto de una tarjeta, Atención al Usuario dispone de información verificable para responder una reclamación. | [Función Pública](https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=65334) |
+| **Ley 527 de 1999** | Incluye disposiciones relacionadas con la integridad y conservación de los registros electrónicos. | Los algoritmos no modifican el archivo original de validaciones, conservando la trazabilidad para revisar posteriormente qué ocurrió ante una reclamación. | [Función Pública](https://funcionpublica.gov.co/eva/gestornormativo/norma.php?i=4276) |
+
+Además del cumplimiento normativo, se tuvieron en cuenta buenas prácticas relacionadas con la confiabilidad de los resultados. Las pruebas utilizan semillas fijas para que los experimentos puedan reproducirse y las estrategias rápidas se comparan con soluciones exactas en casos pequeños. También se mide el tiempo y el consumo energético de las soluciones en lugar de asumir que una estrategia es más eficiente únicamente por su complejidad teórica.
 
 ### 6.5 Sostenibilidad de la decisión (crecimiento del 30 %)
 
-Pendiente para la entrega del 23 de noviembre.
+También se analizó qué pasaría si entra en funcionamiento una tercera línea de cable y la cantidad de validaciones aumenta un 30 %. Este escenario permite revisar si las estrategias propuestas seguirían siendo adecuadas a futuro y no solamente para el volumen actual.
+
+El efecto del crecimiento es mucho más fuerte sobre las estrategias cuadráticas que utiliza actualmente el sistema. Un aumento del 30 % en el tamaño de la entrada hace que el trabajo crezca aproximadamente en un 69 %, debido a que 1,3² = 1,69. Tomando como referencia las mediciones de la línea base, la deduplicación pasaría de aproximadamente 14,6 horas a 24,7 horas por ejecución, mientras que el ordenamiento pasaría de 10,4 a aproximadamente 17,6 horas. Esto aumentaría todavía más la diferencia frente a la ventana operativa disponible de 4 horas.
+
+En cambio, las soluciones con comportamiento lineal crecen de una forma mucho más controlada. En el caso del tope tarifario, la programación dinámica tarda aproximadamente 5,6 segundos para las 950.000 tarjetas utilizadas actualmente. Con un crecimiento del 30 %, se tendrían alrededor de 1.235.000 tarjetas y el tiempo estimado aumentaría solamente a unos 7 segundos, por lo que seguiría estando muy por debajo de la ventana de 4 horas.
+
+Para la operación de franjas de congestión también se espera un mejor comportamiento con las estrategias propuestas. Kadane tiene un crecimiento lineal y divide y vencerás un crecimiento n log n, por lo que ambas escalan mejor que la solución cuadrática actual. Las cifras concretas de tiempo y consumo energético para este escenario se incorporan a partir de los resultados finales de la sección 4.6.
+
+En general, el análisis muestra que elegir algoritmos con mejores órdenes de crecimiento no solamente mejora el rendimiento actual, sino que también permite que el sistema soporte un aumento importante en el volumen de información sin que el tiempo de ejecución y el consumo energético crezcan al mismo ritmo que con las estrategias actuales.
 
 ## 7. Conclusiones
 
