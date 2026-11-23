@@ -279,9 +279,63 @@ Un hallazgo que no esperábamos: la exhaustiva recursiva, que decide solo qué c
 
 Si las validaciones crecieran un 30 %, la DP seguiría siendo lineal en el número de tarjetas: con 1.235.000 tarjetas el cierre tardaría unos 7 segundos.
 
-### 4.6 Segunda operación
+### 4.6 Segunda operación - Evaluación de las franjas de congestión
 
-Pendiente para la entrega del 23 de noviembre.
+Para la segunda operación del proyecto comparamos tres formas de encontrar el tramo consecutivo de intervalos que presenta la mayor acumulacion de pasajeros en una plataforma. Las soluciones evaluadas fueron las siguientes: fuerza bruta, dividir y vencerás y el algoritmo de Kadane.
+
+**Complejidad temporal y espacial**
+
+La fuerza bruta revisa todos los tramos posibles de la serie. Para cada posición inicial va acumulando los valores hacia la derecha, evitando volver a sumar desde cero. Como existen n(n + 1)/2 tramos, su tiempo es Θ(n²). La implementación utiliza Θ(1) de memoria auxiliar.
+
+Dividir y vencerás separa el problema en dos mitades y compara el mejor tramo izquierdo, el derecho y el que cruza el centro. Su tiempo es Θ(n log n) y requiere Θ(log n) de memoria adicional por las llamadas recursivas.
+
+Kadane utiliza un recorrido único. En cada posición decide si conviene continuar la acumulación anterior o empezar un tramo nuevo. Por esta razón, su tiempo es Θ(n) y utiliza Θ(1) de memoria auxiliar.
+
+**Verificación y metodología**
+
+Primero ejecutamos las pruebas de [`pruebas.py`](src/franjas_congestion/pruebas.py), que finalizaron satisfactoriamente. Estas incluyen casos límite, series aleatorias, comparación de las sumas máximas y comprobación de que los datos originales no se modifican.
+
+Las mediciones se realizaron utilizando [`datos.py`](src/franjas_congestion/datos.py) para generar saldos sintéticos de entre −60 y 55 pasajeros por intervalo. Usamos la semilla 2026 + n para reproducir los mismos datos y [`medicion.py`](src/franjas_congestion/medicion.py) para ejecutar los experimentos. El tiempo se midió con `time.perf_counter()`, realizando cinco repeticiones por algoritmo y tamaño, sin incluir la generación de los datos.
+
+El primer experimento comparó las tres estrategias con tamaños de 250, 500, 1.000, 2.000 y 4.000 intervalos.Ademas, el segundo amplió las mediciones hasta 256.000 intervalos, utilizando dividir y vencerás y Kadane.
+
+**Resultados de tiempo**
+
+![Tiempo de ejecución de las tres estrategias](graficas/franjas_congestion/tiempo_vs_n.png)
+
+Con 4.000 intervalos, la fuerza bruta tardó aproximadamente 0,584 segundos, dividir y vencerás 0,00619 segundos y Kadane 0,000312 segundos. En esta prueba, Kadane fue alrededor de 1.872 veces más rápido que la fuerza bruta.
+
+**Resultados de operaciones**
+
+![Operaciones realizadas por las tres estrategias](graficas/franjas_congestion/operaciones_vs_n.png)
+
+En ese mismo tamaño, la fuerza bruta evaluó 8.002.000 tramos, dividir y vencerás contabilizó 51.904 recorridos y Kadane procesó 4.000 elementos. Las operaciones contadas siguen las reglas definidas para cada algoritmo, por lo que sirven especialmente para verificar su crecimiento teórico.
+
+**Comparación entre lo medido y lo esperado**
+
+Al pasar de 2.000 a 4.000 intervalos, el tiempo de la fuerza bruta se multiplicó por 3,98 y sus operaciones por 4,00. Esto coincide con el comportamiento cuadrático esperado.
+
+Dividir y vencerás multiplicó su tiempo por aproximadamente 2,00 y sus operaciones por 2,17, un crecimiento compatible con Θ(n log n).
+
+En Kadane, el tiempo se multiplicó por 2,05 y las operaciones exactamente por 2,00. Esto confirma el comportamiento lineal. Las diferencias pequeñas entre los factores medidos y los teóricos pueden explicarse por el costo fijo de Python y la actividad del sistema operativo.
+
+**Comportamiento con series largas**
+
+![Tiempo de ejecución en series largas](graficas/franjas_congestion/tiempo_largo.png)
+
+Al ampliar el tamaño a 256.000 intervalos, dividir y vencerás tardó aproximadamente 0,560 segundos y Kadane 0,027 segundos. En las series largas también se observó una ventaja de Kadane, aunque algunas mediciones presentaron variaciones de tiempo respecto al crecimiento teórico.
+
+**Extrapolación y consumo energético**
+
+Para estimar el costo en el SITVM tomamos 166.000 intervalos por estación, 80 estaciones y una ejecución secuencial. La energía se calculó suponiendo una potencia constante de 0,5 kW y 12 ejecuciones al año.
+
+| Estrategia | Tiempo estimado por ejecución | Energía por ejecución | Energía anual |
+|---|---:|---:|---:|
+| Fuerza bruta | 22,34 horas | 11,171 kWh | 134,05 kWh |
+| Dividir y vencerás | 28,01 segundos | 0,003891 kWh | 0,04669 kWh |
+| Kadane | 1,40 segundos | 0,000195 kWh | 0,00233 kWh |
+
+La fuerza bruta no resulta adecuada para el histórico completo de dos años, porque necesitaría muchas horas por ejecución. En cambio, dividir y vencerás y Kadane pueden procesar las series en tiempos mucho menores. La opción más conveniente es Kadane, ya que encuentra el mismo resultado exacto utilizando un recorrido lineal y una cantidad constante de memoria auxiliar.
 
 ## 5. Análisis comparativo
 
@@ -323,7 +377,28 @@ Por lo tanto, se considera que la programación dinámica es la alternativa más
 
 ### 5.4 Comparación global y solución seleccionada
 
-Pendiente para la entrega del 23 de noviembre.
+Después de realizar los experimentos de las dos operaciones, encontramos que el principal problema del proceso actual no es solamente la cantidad de información, sino la forma en que los algoritmos la procesan.
+
+En la liquidación del tope tarifario, el reto consiste en encontrar la combinación de productos más económica para el usuario. En la detección de franjas de congestión, lo que necesitamos es identificar el tramo consecutivo con mayor acumulación de pasajeros. Aunque son problemas diferentes, ambos se pueden resolver de manera más eficiente utilizando estrategias adecuadas.
+
+| Aspecto | Liquidación del tope tarifario | Franjas de congestión |
+|---|---|---|
+| Operación | 4 | 3 |
+| Enfoque actual de referencia | Exploración de combinaciones y regla simplificada | Fuerza bruta |
+| Estrategia recomendada | Programación dinámica | Kadane |
+| Complejidad recomendada | Θ(d), con productos fijos | Θ(n) |
+| Volumen analizado | 950.000 tarjetas, 30 días | 80 estaciones, 166.000 intervalos cada una |
+| Tiempo estimado recomendado | 5,6 segundos por cierre | 1,40 segundos por ejecución |
+| Energía anual recomendada | 0,009 kWh | 0,00233 kWh |
+| Ventaja principal | Calcula el costo mínimo exacto | Encuentra la suma máxima con menos trabajo |
+
+En el tope tarifario, la regla simplificada es rápida, pero no garantiza la combinación más económica. Por eso recomendamos programación dinámica, que permite calcular el valor exacto sin explorar todas las combinaciones posibles.
+
+En las franjas de congestión, la fuerza bruta obtiene el resultado correcto, pero realiza demasiadas operaciones. En nuestras mediciones, su extrapolación alcanzó aproximadamente 22,34 horas para el volumen real, mientras que Kadane necesitó alrededor de 1,40 segundos.
+
+También es importante aclarar que el consumo energético depende del tiempo de ejecución y del equipo utilizado. Las estimaciones de las dos operaciones se obtuvieron a partir de mediciones y modelos de crecimiento, por lo que no deben interpretarse como consumos eléctricos medidos directamente en el servidor.
+
+Nuestra recomendación es utilizar programación dinámica para la liquidación del tope y Kadane para las franjas de congestión. Con estas alternativas el sistema puede ofrecer resultados exactos, procesar mayor cantidad de información y reducir significativamente el trabajo computacional respecto a los métodos más costosos.
 
 ## 6. Implicaciones éticas, sociales y ambientales
 
@@ -392,8 +467,19 @@ En general, el análisis muestra que elegir algoritmos con mejores órdenes de c
 
 ## 7. Conclusiones
 
-Pendiente para la entrega del 23 de noviembre.
+El desarrollo del proyecto nos permitió comprobar que escoger un algoritmo adecuado puede tener un efecto importante en el funcionamiento de un sistema, especialmente cuando tiene que procesar grandes cantidades de información.
 
+En la liquidación del tope tarifario encontramos que una solución rápida no necesariamente es la correcta. La regla simplificada puede cobrar más de lo debido cuando los pases cubren días pertenecientes a diferentes bloques. Con programación dinámica pudimos plantear una alternativa que encuentra el costo mínimo y permite calcular la devolución correspondiente.
+
+En las franjas de congestión observamos un problema diferente. Las tres estrategias encuentran la mayor acumulación de pasajeros, pero el trabajo necesario cambia considerablemente. Mientras la fuerza bruta revisa todos los tramos, dividir y vencerás reduce el trabajo y Kadane permite resolver el problema con un solo recorrido.
+
+Las mediciones también nos ayudaron a entender la relación entre la complejidad teórica y los tiempos reales. Aunque existen diferencias por el equipo y el sistema operativo, el comportamiento general de las operaciones coincidió con lo esperado: crecimiento cuadrático para la fuerza bruta, cercano a n log n para dividir y vencerás y lineal para Kadane.
+
+Otro aprendizaje importante fue la necesidad de verificar los resultados. No basta con que un programa termine rápido: también debe devolver una respuesta correcta, respetar las restricciones del problema y conservar los datos originales para permitir futuras comprobaciones.
+
+Como recomendación para el SITVM, proponemos implementar programación dinámica en la liquidación del tope tarifario y Kadane en la detección de franjas de congestión. También consideramos importante revisar posteriormente las operaciones de deduplicación y ordenamiento, que siguen representando una carga significativa para el proceso nocturno. Para ellas se podrían evaluar estructuras hash y algoritmos de ordenamiento de complejidad Θ(n log n).
+
+Finalmente, consideramos necesario mantener pruebas automáticas, mediciones periódicas y una revisión de los resultados cuando aumente el volumen de datos o cambien las reglas del sistema. Esto permitiría conservar la exactitud del proceso y tomar decisiones técnicas basadas en evidencia, teniendo en cuenta tanto el consumo de recursos como el impacto sobre los usuarios del transporte.
 ---
 
 ## Reproducción
